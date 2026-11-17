@@ -2,6 +2,9 @@
 
 | File | Stage | Origin |
 |---|---|---|
+| `stage1-acr.bicep` | 1 | `az group export` → `az bicep decompile` of registry `cgacr13672` (Standard, admin user enabled, East US; includes the built-in scope maps). This registry was re-created after the lab reset |
+| `stage2-aci.bicep` | 2 | Export of `myapp-aci` redeployed into `Regroup_7fpasjkvcc` (containerGroups, image `cgacr13672.azurecr.io/myapp:1.0`, 1 vCPU / 1.5 GB, port 80, restart policy Always, DNS label `myapp-aci-23935`). Registry password is not included |
+| `stage3-aca.bicep` | 3 | Export of environment `myapp-env` + app `myapp-aca` redeployed into `Regroup_7fpasjkvcc` (0.5 vCPU / 1 Gi, ingress 80, min 0 / max 4, HTTP rule `concurrentRequests 10`). Secret values are not included; the workspace ID is `<guid>` |
 | `stage4-all.bicep` | 4 | `az group export` → `az bicep decompile` of the rebuilt Stage 4 environment (`Regroup_7fpasjkvcc`): ACR `cgacr13672`, plan `myapp-plan` (S1, West US 2), web app `myapp-web-15785` + `staging` slot, metric alert `cpu-over-90`, action group `cpu-alert-ag`, autoscale `myapp-plan-autoscale` |
 | `stage4-autoscale-settings.json` | 4 | `az monitor autoscale show` (target: App Service plan `myapp-plan`; min/max/default 1/3/1; CPU > 70 → +1, < 30 → −1) |
 | `stage4-action-group.json` | 4 | `az monitor action-group show -n cpu-alert-ag` (email receiver; address replaced by `<email>`) |
@@ -11,6 +14,6 @@
 | `stage6-autoscale-settings.json` | 6 | `az monitor autoscale show` (target: `myapp-vmss`; 1/6/1; CPU > 70 → +1, < 30 → −1) |
 | `reference/*.bicep`, `reference/*.json` | 1-6 | Hand-written, parameterized templates that redeploy each stage (`az deployment group create -g <rg> -f <file> -p ...`). Used as fallbacks after the lab reset. No subscription IDs or secrets; passwords are `@secure()` parameters |
 
-**Stage 1-3 exports:** `stage1-acr.bicep`, `stage2-aci.bicep` and `stage3-aca.bicep` were exported and compiled in Cloud Shell (screenshots `stage1-acr-export-bicep.png`, `stage2-aci-export-bicep.png`, `stage3-aca-export-bicep.png`), but were lost when the lab reset wiped that environment. The screenshots and `reference/stage1-3` templates stand in for them.
+**Stage 1-3 note:** the original Stage 1-3 exports were lost when the lab reset wiped `Regroup_2xspzsnqpi` (their export screenshots remain in `../screenshots/`). The files above were re-exported on Nov 17 2026 in `Regroup_7fpasjkvcc`.
 
 All exports had the subscription ID, other GUIDs and email addresses replaced with `<subscription-id>`, `<guid>` and `<email>` before being committed.

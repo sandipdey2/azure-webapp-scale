@@ -28,7 +28,7 @@ REFLECTION.md  MOVE-NOTE.md
 | Rubric item | Evidence |
 |---|---|
 | Registry created, image pushed | [`screenshots/stage1-acr-repositories.png`](screenshots/stage1-acr-repositories.png) (repo `myapp`, tag `1.0`), [`screenshots/stage1-acr-repository-list-cli.png`](screenshots/stage1-acr-repository-list-cli.png) |
-| Bicep template for the registry | [`screenshots/stage1-acr-export-bicep.png`](screenshots/stage1-acr-export-bicep.png) (portal export + `az bicep build` → "Bicep compiles OK"); exported file lost in the lab reset (the screenshot stands in); reference [`iac/reference/stage1-acr.bicep`](iac/reference/stage1-acr.bicep) |
+| Bicep template for the registry | [`screenshots/stage1-acr-export-bicep.png`](screenshots/stage1-acr-export-bicep.png) (portal export + `az bicep build` → "Bicep compiles OK"); [`iac/stage1-acr.bicep`](iac/stage1-acr.bicep) (`az group export` + `az bicep decompile` of the current registry `cgacr13672`, Standard SKU, re-created after the lab reset; compiles with `az bicep build`); reference [`iac/reference/stage1-acr.bicep`](iac/reference/stage1-acr.bicep) |
 
 ### Stage 2: Azure Container Instances
 | Rubric item | Evidence |
@@ -38,7 +38,7 @@ REFLECTION.md  MOVE-NOTE.md
 | Stress test | [`screenshots/stage2-aci-stress-leak-loop.png`](screenshots/stage2-aci-stress-leak-loop.png) (`/cpu/add` + 8 × `/leak`, calls 3 and 6 return `000` while the container restarts) |
 | CPU / memory after stress | [`screenshots/stage2-aci-cpu-memory-after-oom.png`](screenshots/stage2-aci-cpu-memory-after-oom.png) (CPU spike ~430 millicores, memory ~1 GB, "terminated with ExitCode 137", restarts 2) |
 | Out-of-memory kill / restart | [`screenshots/stage2-aci-oomkilled-restarts.png`](screenshots/stage2-aci-oomkilled-restarts.png) (Previous state *Terminated*, restart count 2) |
-| Bicep template | [`screenshots/stage2-aci-export-bicep.png`](screenshots/stage2-aci-export-bicep.png) (export → decompile → compiles OK); exported file lost in the lab reset (the screenshot stands in); reference [`iac/reference/stage2-aci.bicep`](iac/reference/stage2-aci.bicep) |
+| Bicep template | [`screenshots/stage2-aci-export-bicep.png`](screenshots/stage2-aci-export-bicep.png) (export → decompile → compiles OK); [`iac/stage2-aci.bicep`](iac/stage2-aci.bicep) (`Microsoft.ContainerInstance/containerGroups` with image `cgacr13672.azurecr.io/myapp:1.0`, 1 vCPU / 1.5 GB, port 80; exported from a redeployment of the same image into `Regroup_7fpasjkvcc` on Nov 17 2026 because the original export was lost in the lab reset); reference [`iac/reference/stage2-aci.bicep`](iac/reference/stage2-aci.bicep) |
 
 ### Stage 3: Azure Container Apps
 | Rubric item | Evidence |
@@ -46,8 +46,9 @@ REFLECTION.md  MOVE-NOTE.md
 | Scale rule, min 0 / max 4 | [`screenshots/stage3-aca-scale-rules-min0-max4.png`](screenshots/stage3-aca-scale-rules-min0-max4.png) (Min-max replicas 0-4, 1 scale rule, 2/4 replicas active) |
 | Scale to zero and 0→1 | [`screenshots/stage3-aca-scaled-to-zero.png`](screenshots/stage3-aca-scaled-to-zero.png), [`screenshots/stage3-aca-zero-replicas-cli.png`](screenshots/stage3-aca-zero-replicas-cli.png), [`screenshots/stage3-aca-scale-0-to-1.png`](screenshots/stage3-aca-scale-0-to-1.png) |
 | Scale out under load | [`screenshots/stage3-aca-replica-count.png`](screenshots/stage3-aca-replica-count.png) (Replica Count 0→1→4), [`screenshots/stage3-aca-memory-4-replicas.png`](screenshots/stage3-aca-memory-4-replicas.png) (Memory % chart + 4 replicas listed) |
+| CPU metric | [`screenshots/stage3-aca-cpu.png`](screenshots/stage3-aca-cpu.png) (CPU Usage, Avg, last 24 h, redeployed app: flat at ~1.96 millicores, because the HTTP-scaled app idles between requests) and [`screenshots/stage3-aca-replica-count-redeploy.png`](screenshots/stage3-aca-replica-count-redeploy.png) (Replica Count 0 → 1 on the first request). The CPU-under-load behaviour of the original run is shown by the replica scale-out to 4 above; no CPU chart was captured during that run. |
 | Memory limit / OOM | [`screenshots/stage3-aca-oom-exit137.png`](screenshots/stage3-aca-oom-exit137.png) (log stream + system events "terminated with exit code '137'", restarts 5) |
-| Bicep template | [`screenshots/stage3-aca-export-bicep.png`](screenshots/stage3-aca-export-bicep.png) (export → decompile → compiles OK); exported file lost in the lab reset (the screenshot stands in); reference [`iac/reference/stage3-aca.bicep`](iac/reference/stage3-aca.bicep) |
+| Bicep template | [`screenshots/stage3-aca-export-bicep.png`](screenshots/stage3-aca-export-bicep.png) (export → decompile → compiles OK); [`iac/stage3-aca.bicep`](iac/stage3-aca.bicep) (environment `myapp-env` + app `myapp-aca`, 0.5 vCPU / 1 Gi, `minReplicas 0`, `maxReplicas 4`, HTTP rule `concurrentRequests 10`; exported from a redeployment into `Regroup_7fpasjkvcc` on Nov 17 2026 because the original export was lost in the lab reset); reference [`iac/reference/stage3-aca.bicep`](iac/reference/stage3-aca.bicep) |
 
 ### Stage 4: App Service
 | Rubric item | Evidence |
@@ -79,7 +80,7 @@ REFLECTION.md  MOVE-NOTE.md
 | ARM export | [`iac/stage6-vmss.json`](iac/stage6-vmss.json) (VMSS + LB + instances), [`iac/stage6-autoscale-settings.json`](iac/stage6-autoscale-settings.json) (1/6/1, >70 / <30); reference [`iac/reference/stage6-vmss.json`](iac/reference/stage6-vmss.json) |
 
 
-**Stage 1-3 Bicep exports:** they were generated and compiled in Cloud Shell (see the `stageN-*-export-bicep.png` screenshots: `az group export` → `az bicep decompile` → "Bicep compiles OK"), but the files were lost when the lab reset wiped the first environment. The export screenshots and the matching parameterized templates in [`iac/reference/`](iac/reference/) stand in for them.
+**Stage 1-3 Bicep exports:** the originals were generated and compiled in Cloud Shell (see the `stageN-*-export-bicep.png` screenshots), but the files were lost when the lab reset wiped the first environment. The files now in `iac/` are fresh exports: Stage 1 from the current registry `cgacr13672` (re-created after the reset), Stages 2 and 3 from a redeployment of the same image and settings into `Regroup_7fpasjkvcc` on Nov 17 2026. The behavioural screenshots (stress, OOM, scaling) are from the first run.
 
 ## Configuration values (from the exported files)
 | Setting | Required | Actual | Source |
@@ -141,7 +142,7 @@ az monitor autoscale rule create ... --condition "Percentage CPU < 30 avg 7m" --
 
 Summary of deviations from the brief, so the reviewer does not have to search for them:
 1. **Resource group:** the provided `Regroup_*` group was used instead of `my_rg` (the lab cannot create resource groups).
-2. **Stage 1-3 Bicep exports:** produced and compiled (screenshots), but the files were lost in the lab reset.
+2. **Stage 1-3 Bicep exports:** the original files were lost in the lab reset; the committed exports come from the current registry `cgacr13672` (Stage 1) and a redeployment of ACI/ACA into `Regroup_7fpasjkvcc` on Nov 17 2026 (Stages 2-3). Behavioural screenshots are from the first run in `Regroup_2xspzsnqpi`.
 3. **Stage 4 region:** West US 2 instead of East US (S1 quota is 0 in East US).
 4. **Stage 4 alert email:** rule and action group are configured, but no alert email was received (CPU never stayed above 90 % for 10 min; email verification pending in the lab).
 5. **Stage 5 resource group move:** blocked by permissions; the before/after exports are identical ([`MOVE-NOTE.md`](MOVE-NOTE.md)).
@@ -151,7 +152,7 @@ Summary of deviations from the brief, so the reviewer does not have to search fo
 |---|---|
 | Lab role cannot create resource groups (`AuthorizationFailed` on `Microsoft.Resources/subscriptions/resourcegroups/write`) | Used the provided `Regroup_*` group with every resource in East US. The Stage 5 resource group move could not be performed; see `MOVE-NOTE.md` (before/after exports are identical). |
 | App Service quota for S1 in East US is 0 | Stage 4 plan created in **West US 2**. |
-| The lab session reset mid-project (resources wiped) | Stages 1-3 ran in `Regroup_2xspzsnqpi`; their exported Bicep files were lost with that environment (export screenshots kept). After the reset, Stages 4-6 were rebuilt in `Regroup_7fpasjkvcc` with a new registry (`cgacr13672`) and app (`myapp-web-15785`). Most Stage 4 screenshots come from the first Stage 4 run (`myapp-web-24786`); the `iac/stage4-*` files come from the rebuild. |
+| The lab session reset mid-project (resources wiped) | Stages 1-3 ran in `Regroup_2xspzsnqpi`; their exported Bicep files were lost with that environment (export screenshots kept); Stage 1-3 exports were regenerated from the current registry and an ACI/ACA redeployment in `Regroup_7fpasjkvcc`. After the reset, Stages 4-6 were rebuilt in `Regroup_7fpasjkvcc` with a new registry (`cgacr13672`) and app (`myapp-web-15785`). Most Stage 4 screenshots come from the first Stage 4 run (`myapp-web-24786`); the `iac/stage4-*` files come from the rebuild. |
 | `az group export` omits autoscale settings and action groups (and the CPU alert never fired) | Captured them with `az monitor autoscale show` and `az monitor action-group show` (`stage4-autoscale-settings.json`, `stage4-action-group.json`, `stage6-autoscale-settings.json`). |
 | Cloud Shell Microsoft Graph / portal token timeouts broke `az keyvault create` and role assignments | Deployed Key Vault + key + disk encryption set + access policy + encrypted disk in one ARM template ([`iac/stage5-encryption.json`](iac/stage5-encryption.json)), which needs no Graph call. Re-signed in with `az login --use-device-code` when tokens expired. |
 | `az vmss create --lb` adds a default rule `LBRule` on 80→80 that clashes with a new 80→8000 rule | Updated `LBRule` to backend port 8000 with probe `http-probe-8000` instead of adding a second rule. |
