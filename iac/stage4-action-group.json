@@ -1,0 +1,27 @@
+{
+  "armRoleReceivers": [],
+  "automationRunbookReceivers": [],
+  "azureAppPushReceivers": [],
+  "azureFunctionReceivers": [],
+  "emailReceivers": [
+    {
+      "emailAddress": "<email>",
+      "name": "me",
+      "status": "Enabled",
+      "useCommonAlertSchema": false
+    }
+  ],
+  "enabled": true,
+  "eventHubReceivers": [],
+  "groupShortName": "cpualert",
+  "id": "/subscriptions/<guid>/resourceGroups/Regroup_7fpasjkvcc/providers/microsoft.insights/actionGroups/cpu-alert-ag",
+  "itsmReceivers": [],
+  "location": "Global",
+  "logicAppReceivers": [],
+  "name": "cpu-alert-ag",
+  "resourceGroup": "Regroup_7fpasjkvcc",
+  "smsReceivers": [],
+  "type": "Microsoft.Insights/ActionGroups",
+  "voiceReceivers": [],
+  "webhookReceivers": []
+}

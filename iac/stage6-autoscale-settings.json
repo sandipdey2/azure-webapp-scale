@@ -1,0 +1,76 @@
+{
+  "enabled": true,
+  "id": "/subscriptions/<subscription-id>/resourceGroups/Regroup_7fpasjkvcc/providers/microsoft.insights/autoscalesettings/myapp-vmss-autoscale",
+  "location": "westus",
+  "name": "myapp-vmss-autoscale",
+  "notifications": [
+    {
+      "email": {
+        "customEmails": [],
+        "sendToSubscriptionAdministrator": false,
+        "sendToSubscriptionCoAdministrators": false
+      },
+      "operation": "Scale",
+      "webhooks": []
+    }
+  ],
+  "predictiveAutoscalePolicy": {
+    "scaleMode": "Disabled"
+  },
+  "profiles": [
+    {
+      "capacity": {
+        "default": "1",
+        "maximum": "6",
+        "minimum": "1"
+      },
+      "name": "default",
+      "rules": [
+        {
+          "metricTrigger": {
+            "dividePerInstance": false,
+            "metricName": "Percentage CPU",
+            "metricNamespace": "",
+            "metricResourceUri": "/subscriptions/<subscription-id>/resourceGroups/Regroup_7fpasjkvcc/providers/Microsoft.Compute/virtualMachineScaleSets/myapp-vmss",
+            "operator": "GreaterThan",
+            "statistic": "Average",
+            "threshold": 70.0,
+            "timeAggregation": "Average",
+            "timeGrain": "PT1M",
+            "timeWindow": "PT5M"
+          },
+          "scaleAction": {
+            "cooldown": "PT5M",
+            "direction": "Increase",
+            "type": "ChangeCount",
+            "value": "1"
+          }
+        },
+        {
+          "metricTrigger": {
+            "dividePerInstance": false,
+            "metricName": "Percentage CPU",
+            "metricNamespace": "",
+            "metricResourceUri": "/subscriptions/<subscription-id>/resourceGroups/Regroup_7fpasjkvcc/providers/Microsoft.Compute/virtualMachineScaleSets/myapp-vmss",
+            "operator": "LessThan",
+            "statistic": "Average",
+            "threshold": 30.0,
+            "timeAggregation": "Average",
+            "timeGrain": "PT1M",
+            "timeWindow": "PT7M"
+          },
+          "scaleAction": {
+            "cooldown": "PT7M",
+            "direction": "Decrease",
+            "type": "ChangeCount",
+            "value": "1"
+          }
+        }
+      ]
+    }
+  ],
+  "resourceGroup": "Regroup_7fpasjkvcc",
+  "tags": {},
+  "targetResourceUri": "/subscriptions/<subscription-id>/resourceGroups/Regroup_7fpasjkvcc/providers/Microsoft.Compute/virtualMachineScaleSets/myapp-vmss",
+  "type": "Microsoft.Insights/autoscaleSettings"
+}

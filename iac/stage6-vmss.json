@@ -1,0 +1,735 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "disks_myapp_vmss_myapp_vmss_0_OsDisk_1_1f25cc5bbb804603814dc23bc11f9e24_externalid": {
+      "type": "String"
+    },
+    "disks_myapp_vmss_myapp_vmss_1_OsDisk_1_fdd7952989fa43ff89cbcdd7412ff433_externalid": {
+      "type": "String"
+    },
+    "disks_myapp_vmss_myapp_vmss_2_OsDisk_1_a0a27e7c3a484befa65288f32a73c070_externalid": {
+      "type": "String"
+    },
+    "disks_myapp_vmss_myapp_vmss_3_OsDisk_1_099280ef4bb44a4e83ff4f99a431b63d_externalid": {
+      "type": "String"
+    },
+    "disks_myapp_vmss_myapp_vmss_4_OsDisk_1_0d66c20b53b84b7cb1cd4f8e061c1447_externalid": {
+      "type": "String"
+    },
+    "galleries_myappgallery_externalid": {
+      "type": "String"
+    },
+    "loadBalancers_myapp_vmss_lb_name": {
+      "type": "String"
+    },
+    "networkSecurityGroups_myapp_vmss_nsg_externalid": {
+      "type": "String"
+    },
+    "publicIPAddresses_myapp_vmss_lb_pip_externalid": {
+      "type": "String"
+    },
+    "virtualMachineScaleSets_myapp_vmss_name": {
+      "type": "String"
+    },
+    "virtualNetworks_myapp_vmVNET_externalid": {
+      "type": "String"
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2025-09-01",
+      "location": "eastus",
+      "name": "[parameters('loadBalancers_myapp_vmss_lb_name')]",
+      "properties": {
+        "backendAddressPools": [
+          {
+            "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]",
+            "name": "myapp-vmss-bepool",
+            "properties": {
+              "loadBalancerBackendAddresses": [
+                {
+                  "name": "<guid>",
+                  "properties": {}
+                },
+                {
+                  "name": "<guid>",
+                  "properties": {}
+                },
+                {
+                  "name": "<guid>",
+                  "properties": {}
+                },
+                {
+                  "name": "<guid>",
+                  "properties": {}
+                },
+                {
+                  "name": "<guid>",
+                  "properties": {}
+                }
+              ]
+            }
+          }
+        ],
+        "frontendIPConfigurations": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_myapp_vmss_lb_name')), '/frontendIPConfigurations/loadBalancerFrontEnd')]",
+            "name": "loadBalancerFrontEnd",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[parameters('publicIPAddresses_myapp_vmss_lb_pip_externalid')]"
+              }
+            }
+          }
+        ],
+        "inboundNatPools": [],
+        "inboundNatRules": [
+          {
+            "id": "[resourceId('Microsoft.Network/loadBalancers/inboundNatRules', parameters('loadBalancers_myapp_vmss_lb_name'), 'NatRule')]",
+            "name": "NatRule",
+            "properties": {
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+              },
+              "backendPort": 22,
+              "enableFloatingIP": false,
+              "enableTcpReset": false,
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_myapp_vmss_lb_name')), '/frontendIPConfigurations/loadBalancerFrontEnd')]"
+              },
+              "frontendPort": 0,
+              "frontendPortRangeEnd": 50119,
+              "frontendPortRangeStart": 50000,
+              "idleTimeoutInMinutes": 5,
+              "protocol": "Tcp"
+            }
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_myapp_vmss_lb_name')), '/loadBalancingRules/LBRule')]",
+            "name": "LBRule",
+            "properties": {
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+              },
+              "backendAddressPools": [
+                {
+                  "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+                }
+              ],
+              "backendPort": 8000,
+              "disableOutboundSnat": false,
+              "enableConnectionTracking": false,
+              "enableFloatingIP": false,
+              "enableTcpReset": false,
+              "frontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_myapp_vmss_lb_name')), '/frontendIPConfigurations/loadBalancerFrontEnd')]"
+              },
+              "frontendPort": 80,
+              "idleTimeoutInMinutes": 5,
+              "loadDistribution": "Default",
+              "probe": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_myapp_vmss_lb_name')), '/probes/http-probe-8000')]"
+              },
+              "protocol": "Tcp"
+            }
+          }
+        ],
+        "outboundRules": [],
+        "probes": [
+          {
+            "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_myapp_vmss_lb_name')), '/probes/http-probe-8000')]",
+            "name": "http-probe-8000",
+            "properties": {
+              "intervalInSeconds": 5,
+              "noHealthyBackendsBehavior": "AllProbedDown",
+              "numberOfProbes": 2,
+              "port": 8000,
+              "probeThreshold": 1,
+              "protocol": "Http",
+              "requestPath": "/healthz"
+            }
+          }
+        ]
+      },
+      "sku": {
+        "name": "Standard",
+        "tier": "Regional"
+      },
+      "type": "Microsoft.Network/loadBalancers"
+    },
+    {
+      "apiVersion": "2026-04-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+      ],
+      "location": "eastus",
+      "name": "[parameters('virtualMachineScaleSets_myapp_vmss_name')]",
+      "properties": {
+        "doNotRunExtensionsOnOverprovisionedVMs": false,
+        "orchestrationMode": "Uniform",
+        "overprovision": false,
+        "platformFaultDomainCount": 5,
+        "singlePlacementGroup": true,
+        "upgradePolicy": {
+          "mode": "Automatic"
+        },
+        "virtualMachineProfile": {
+          "networkProfile": {
+            "networkInterfaceConfigurations": [
+              {
+                "name": "myapp4e46Nic",
+                "properties": {
+                  "disableTcpStateTracking": false,
+                  "dnsSettings": {
+                    "dnsServers": []
+                  },
+                  "enableIPForwarding": false,
+                  "ipConfigurations": [
+                    {
+                      "name": "myapp4e46IPConfig",
+                      "properties": {
+                        "loadBalancerBackendAddressPools": [
+                          {
+                            "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), concat(parameters('virtualMachineScaleSets_myapp_vmss_name'), '-bepool'))]"
+                          }
+                        ],
+                        "privateIPAddressVersion": "IPv4",
+                        "subnet": {
+                          "id": "[concat(parameters('virtualNetworks_myapp_vmVNET_externalid'), '/subnets/myapp-vmSubnet')]"
+                        }
+                      }
+                    }
+                  ],
+                  "networkSecurityGroup": {
+                    "id": "[parameters('networkSecurityGroups_myapp_vmss_nsg_externalid')]"
+                  },
+                  "primary": true
+                }
+              }
+            ]
+          },
+          "securityProfile": {
+            "securityType": "TrustedLaunch",
+            "uefiSettings": {
+              "secureBootEnabled": true,
+              "vTpmEnabled": true
+            }
+          },
+          "storageProfile": {
+            "diskControllerType": "SCSI",
+            "imageReference": {
+              "id": "[concat(parameters('galleries_myappgallery_externalid'), '/images/myapp-img/versions/1.0.0')]"
+            },
+            "osDisk": {
+              "caching": "ReadWrite",
+              "createOption": "FromImage",
+              "diskSizeGB": 30,
+              "managedDisk": {
+                "storageAccountType": "Premium_LRS"
+              },
+              "osType": "Linux"
+            }
+          }
+        }
+      },
+      "sku": {
+        "capacity": 5,
+        "name": "Standard_B1s",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Compute/virtualMachineScaleSets"
+    },
+    {
+      "apiVersion": "2025-09-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_myapp_vmss_lb_name'))]"
+      ],
+      "name": "[concat(parameters('loadBalancers_myapp_vmss_lb_name'), '/myapp-vmss-bepool')]",
+      "properties": {
+        "loadBalancerBackendAddresses": [
+          {
+            "name": "<guid>",
+            "properties": {}
+          },
+          {
+            "name": "<guid>",
+            "properties": {}
+          },
+          {
+            "name": "<guid>",
+            "properties": {}
+          },
+          {
+            "name": "<guid>",
+            "properties": {}
+          },
+          {
+            "name": "<guid>",
+            "properties": {}
+          }
+        ]
+      },
+      "type": "Microsoft.Network/loadBalancers/backendAddressPools"
+    },
+    {
+      "apiVersion": "2026-04-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('virtualMachineScaleSets_myapp_vmss_name'))]",
+        "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+      ],
+      "location": "eastus",
+      "name": "[concat(parameters('virtualMachineScaleSets_myapp_vmss_name'), '/0')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_B1s"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/virtualMachines', parameters('virtualMachineScaleSets_myapp_vmss_name'), '0'), '/networkInterfaces/myapp4e46Nic')]"
+            }
+          ]
+        },
+        "networkProfileConfiguration": {
+          "networkInterfaceConfigurations": [
+            {
+              "name": "myapp4e46Nic",
+              "properties": {
+                "disableTcpStateTracking": false,
+                "dnsSettings": {
+                  "dnsServers": []
+                },
+                "enableIPForwarding": false,
+                "ipConfigurations": [
+                  {
+                    "name": "myapp4e46IPConfig",
+                    "properties": {
+                      "loadBalancerBackendAddressPools": [
+                        {
+                          "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+                        }
+                      ],
+                      "privateIPAddressVersion": "IPv4",
+                      "subnet": {
+                        "id": "[concat(parameters('virtualNetworks_myapp_vmVNET_externalid'), '/subnets/myapp-vmSubnet')]"
+                      }
+                    }
+                  }
+                ],
+                "networkSecurityGroup": {
+                  "id": "[parameters('networkSecurityGroups_myapp_vmss_nsg_externalid')]"
+                },
+                "primary": true
+              }
+            }
+          ]
+        },
+        "resilientVMDeletionStatus": "Disabled",
+        "securityProfile": {
+          "securityType": "TrustedLaunch",
+          "uefiSettings": {
+            "secureBootEnabled": true,
+            "vTpmEnabled": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "diskControllerType": "SCSI",
+          "imageReference": {
+            "id": "[concat(parameters('galleries_myappgallery_externalid'), '/images/myapp-img/versions/1.0.0')]"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "diskSizeGB": 30,
+            "managedDisk": {
+              "id": "[parameters('disks_myapp_vmss_myapp_vmss_0_OsDisk_1_1f25cc5bbb804603814dc23bc11f9e24_externalid')]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "myapp-vmss_myapp-vmss_0_OsDisk_1_1f25cc5bbb804603814dc23bc11f9e24",
+            "osType": "Linux"
+          }
+        }
+      },
+      "sku": {
+        "name": "Standard_B1s",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Compute/virtualMachineScaleSets/virtualMachines"
+    },
+    {
+      "apiVersion": "2026-04-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('virtualMachineScaleSets_myapp_vmss_name'))]",
+        "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+      ],
+      "location": "eastus",
+      "name": "[concat(parameters('virtualMachineScaleSets_myapp_vmss_name'), '/1')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_B1s"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/virtualMachines', parameters('virtualMachineScaleSets_myapp_vmss_name'), '1'), '/networkInterfaces/myapp4e46Nic')]"
+            }
+          ]
+        },
+        "networkProfileConfiguration": {
+          "networkInterfaceConfigurations": [
+            {
+              "name": "myapp4e46Nic",
+              "properties": {
+                "disableTcpStateTracking": false,
+                "dnsSettings": {
+                  "dnsServers": []
+                },
+                "enableIPForwarding": false,
+                "ipConfigurations": [
+                  {
+                    "name": "myapp4e46IPConfig",
+                    "properties": {
+                      "loadBalancerBackendAddressPools": [
+                        {
+                          "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+                        }
+                      ],
+                      "privateIPAddressVersion": "IPv4",
+                      "subnet": {
+                        "id": "[concat(parameters('virtualNetworks_myapp_vmVNET_externalid'), '/subnets/myapp-vmSubnet')]"
+                      }
+                    }
+                  }
+                ],
+                "networkSecurityGroup": {
+                  "id": "[parameters('networkSecurityGroups_myapp_vmss_nsg_externalid')]"
+                },
+                "primary": true
+              }
+            }
+          ]
+        },
+        "resilientVMDeletionStatus": "Disabled",
+        "securityProfile": {
+          "securityType": "TrustedLaunch",
+          "uefiSettings": {
+            "secureBootEnabled": true,
+            "vTpmEnabled": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "diskControllerType": "SCSI",
+          "imageReference": {
+            "id": "[concat(parameters('galleries_myappgallery_externalid'), '/images/myapp-img/versions/1.0.0')]"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "diskSizeGB": 30,
+            "managedDisk": {
+              "id": "[parameters('disks_myapp_vmss_myapp_vmss_1_OsDisk_1_fdd7952989fa43ff89cbcdd7412ff433_externalid')]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "myapp-vmss_myapp-vmss_1_OsDisk_1_fdd7952989fa43ff89cbcdd7412ff433",
+            "osType": "Linux"
+          }
+        }
+      },
+      "sku": {
+        "name": "Standard_B1s",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Compute/virtualMachineScaleSets/virtualMachines"
+    },
+    {
+      "apiVersion": "2026-04-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('virtualMachineScaleSets_myapp_vmss_name'))]",
+        "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+      ],
+      "location": "eastus",
+      "name": "[concat(parameters('virtualMachineScaleSets_myapp_vmss_name'), '/2')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_B1s"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/virtualMachines', parameters('virtualMachineScaleSets_myapp_vmss_name'), '2'), '/networkInterfaces/myapp4e46Nic')]"
+            }
+          ]
+        },
+        "networkProfileConfiguration": {
+          "networkInterfaceConfigurations": [
+            {
+              "name": "myapp4e46Nic",
+              "properties": {
+                "disableTcpStateTracking": false,
+                "dnsSettings": {
+                  "dnsServers": []
+                },
+                "enableIPForwarding": false,
+                "ipConfigurations": [
+                  {
+                    "name": "myapp4e46IPConfig",
+                    "properties": {
+                      "loadBalancerBackendAddressPools": [
+                        {
+                          "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+                        }
+                      ],
+                      "privateIPAddressVersion": "IPv4",
+                      "subnet": {
+                        "id": "[concat(parameters('virtualNetworks_myapp_vmVNET_externalid'), '/subnets/myapp-vmSubnet')]"
+                      }
+                    }
+                  }
+                ],
+                "networkSecurityGroup": {
+                  "id": "[parameters('networkSecurityGroups_myapp_vmss_nsg_externalid')]"
+                },
+                "primary": true
+              }
+            }
+          ]
+        },
+        "resilientVMDeletionStatus": "Disabled",
+        "securityProfile": {
+          "securityType": "TrustedLaunch",
+          "uefiSettings": {
+            "secureBootEnabled": true,
+            "vTpmEnabled": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "diskControllerType": "SCSI",
+          "imageReference": {
+            "id": "[concat(parameters('galleries_myappgallery_externalid'), '/images/myapp-img/versions/1.0.0')]"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "diskSizeGB": 30,
+            "managedDisk": {
+              "id": "[parameters('disks_myapp_vmss_myapp_vmss_2_OsDisk_1_a0a27e7c3a484befa65288f32a73c070_externalid')]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "myapp-vmss_myapp-vmss_2_OsDisk_1_a0a27e7c3a484befa65288f32a73c070",
+            "osType": "Linux"
+          }
+        }
+      },
+      "sku": {
+        "name": "Standard_B1s",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Compute/virtualMachineScaleSets/virtualMachines"
+    },
+    {
+      "apiVersion": "2026-04-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('virtualMachineScaleSets_myapp_vmss_name'))]",
+        "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+      ],
+      "location": "eastus",
+      "name": "[concat(parameters('virtualMachineScaleSets_myapp_vmss_name'), '/3')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_B1s"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/virtualMachines', parameters('virtualMachineScaleSets_myapp_vmss_name'), '3'), '/networkInterfaces/myapp4e46Nic')]"
+            }
+          ]
+        },
+        "networkProfileConfiguration": {
+          "networkInterfaceConfigurations": [
+            {
+              "name": "myapp4e46Nic",
+              "properties": {
+                "disableTcpStateTracking": false,
+                "dnsSettings": {
+                  "dnsServers": []
+                },
+                "enableIPForwarding": false,
+                "ipConfigurations": [
+                  {
+                    "name": "myapp4e46IPConfig",
+                    "properties": {
+                      "loadBalancerBackendAddressPools": [
+                        {
+                          "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+                        }
+                      ],
+                      "privateIPAddressVersion": "IPv4",
+                      "subnet": {
+                        "id": "[concat(parameters('virtualNetworks_myapp_vmVNET_externalid'), '/subnets/myapp-vmSubnet')]"
+                      }
+                    }
+                  }
+                ],
+                "networkSecurityGroup": {
+                  "id": "[parameters('networkSecurityGroups_myapp_vmss_nsg_externalid')]"
+                },
+                "primary": true
+              }
+            }
+          ]
+        },
+        "resilientVMDeletionStatus": "Disabled",
+        "securityProfile": {
+          "securityType": "TrustedLaunch",
+          "uefiSettings": {
+            "secureBootEnabled": true,
+            "vTpmEnabled": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "diskControllerType": "SCSI",
+          "imageReference": {
+            "id": "[concat(parameters('galleries_myappgallery_externalid'), '/images/myapp-img/versions/1.0.0')]"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "diskSizeGB": 30,
+            "managedDisk": {
+              "id": "[parameters('disks_myapp_vmss_myapp_vmss_3_OsDisk_1_099280ef4bb44a4e83ff4f99a431b63d_externalid')]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "myapp-vmss_myapp-vmss_3_OsDisk_1_099280ef4bb44a4e83ff4f99a431b63d",
+            "osType": "Linux"
+          }
+        }
+      },
+      "sku": {
+        "name": "Standard_B1s",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Compute/virtualMachineScaleSets/virtualMachines"
+    },
+    {
+      "apiVersion": "2026-04-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('virtualMachineScaleSets_myapp_vmss_name'))]",
+        "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+      ],
+      "location": "eastus",
+      "name": "[concat(parameters('virtualMachineScaleSets_myapp_vmss_name'), '/4')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_B1s"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/virtualMachines', parameters('virtualMachineScaleSets_myapp_vmss_name'), '4'), '/networkInterfaces/myapp4e46Nic')]"
+            }
+          ]
+        },
+        "networkProfileConfiguration": {
+          "networkInterfaceConfigurations": [
+            {
+              "name": "myapp4e46Nic",
+              "properties": {
+                "disableTcpStateTracking": false,
+                "dnsSettings": {
+                  "dnsServers": []
+                },
+                "enableIPForwarding": false,
+                "ipConfigurations": [
+                  {
+                    "name": "myapp4e46IPConfig",
+                    "properties": {
+                      "loadBalancerBackendAddressPools": [
+                        {
+                          "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+                        }
+                      ],
+                      "privateIPAddressVersion": "IPv4",
+                      "subnet": {
+                        "id": "[concat(parameters('virtualNetworks_myapp_vmVNET_externalid'), '/subnets/myapp-vmSubnet')]"
+                      }
+                    }
+                  }
+                ],
+                "networkSecurityGroup": {
+                  "id": "[parameters('networkSecurityGroups_myapp_vmss_nsg_externalid')]"
+                },
+                "primary": true
+              }
+            }
+          ]
+        },
+        "resilientVMDeletionStatus": "Disabled",
+        "securityProfile": {
+          "securityType": "TrustedLaunch",
+          "uefiSettings": {
+            "secureBootEnabled": true,
+            "vTpmEnabled": true
+          }
+        },
+        "storageProfile": {
+          "dataDisks": [],
+          "diskControllerType": "SCSI",
+          "imageReference": {
+            "id": "[concat(parameters('galleries_myappgallery_externalid'), '/images/myapp-img/versions/1.0.0')]"
+          },
+          "osDisk": {
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "diskSizeGB": 30,
+            "managedDisk": {
+              "id": "[parameters('disks_myapp_vmss_myapp_vmss_4_OsDisk_1_0d66c20b53b84b7cb1cd4f8e061c1447_externalid')]",
+              "storageAccountType": "Premium_LRS"
+            },
+            "name": "myapp-vmss_myapp-vmss_4_OsDisk_1_0d66c20b53b84b7cb1cd4f8e061c1447",
+            "osType": "Linux"
+          }
+        }
+      },
+      "sku": {
+        "name": "Standard_B1s",
+        "tier": "Standard"
+      },
+      "type": "Microsoft.Compute/virtualMachineScaleSets/virtualMachines"
+    },
+    {
+      "apiVersion": "2025-09-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_myapp_vmss_lb_name'))]",
+        "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+      ],
+      "name": "[concat(parameters('loadBalancers_myapp_vmss_lb_name'), '/NatRule')]",
+      "properties": {
+        "backendAddressPool": {
+          "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancers_myapp_vmss_lb_name'), 'myapp-vmss-bepool')]"
+        },
+        "backendPort": 22,
+        "enableFloatingIP": false,
+        "enableTcpReset": false,
+        "frontendIPConfiguration": {
+          "id": "[concat(resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancers_myapp_vmss_lb_name')), '/frontendIPConfigurations/loadBalancerFrontEnd')]"
+        },
+        "frontendPort": 0,
+        "frontendPortRangeEnd": 50119,
+        "frontendPortRangeStart": 50000,
+        "idleTimeoutInMinutes": 5,
+        "protocol": "Tcp"
+      },
+      "type": "Microsoft.Network/loadBalancers/inboundNatRules"
+    }
+  ],
+  "variables": {}
+}
