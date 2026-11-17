@@ -7,9 +7,9 @@ Udacity project: one containerized FastAPI app ("Leak-on-Click + CPU Burn", from
 | 1 | Azure Container Registry `cgacr31204` (East US, Standard) | Image `myapp:1.0` (and `2.0`) built server-side with `az acr build` |
 | 2 | Azure Container Instances `myapp-aci` (1 vCPU / 1.5 GB) | Memory leak drove usage to ~1 GB → container killed with **ExitCode 137**, restart count 2 |
 | 3 | Azure Container Apps `myapp-aca` (env `myapp-env`) | min 0 / max 4, HTTP scale rule: **scaled to 0**, 0→1 on request, **out to 4** under load; leak → exit code 137, 5 restarts |
-| 4 | App Service `myapp-web-24786` on plan `myapp-plan` (S1, West US 2) | Autoscale 1/3/1 → **1→2→3 instances**; staging slot running v2.0 with **30 %** traffic; CPU > 90 % alert with email action group |
+| 4 | App Service `myapp-web-24786` on plan `myapp-plan` (S1, West US 2) | Autoscale 1/3/1 → **1→2→3 instances**; staging slot running v2.0 with **30 %** traffic; CPU > 90 % metric alert wired to an email action group |
 | 5 | VM `myapp-vm` (Ubuntu 22.04, Trusted Launch) | App as systemd service on :8000; B1s → B2s resize; 8 GB data disk encrypted with a **customer-managed key**, mounted at `/datadisk` |
-| 6 | VM Scale Set `myapp-vmss` + Standard Load Balancer | Gallery image `myapp-img 1.0.0`; LB 80→8000 with `/healthz` probe; autoscale 1/6/1 → **scaled out to 6** |
+| 6 | VM Scale Set `myapp-vmss` + Standard Load Balancer | Gallery image `myapp-img 1.0.0`; LB 80→8000 with `/healthz` probe; autoscale 1/6/1 → **scaled out to 6**, then scaled back in after the load stopped |
 
 Reflection on when to use each service: [REFLECTION.md](REFLECTION.md). Resource group move note: [MOVE-NOTE.md](MOVE-NOTE.md).
 
@@ -56,14 +56,14 @@ REFLECTION.md  MOVE-NOTE.md
 | Autoscale 1/3/1 on CPU, scaled to 3 | `screenshots/stage4-cpu-scaleout-3.png` (instance count 1 → 2 → 3 during the load test) |
 | Deployment slot (staging) | `screenshots/stage4-deployment-slots.png`, `screenshots/stage4-staging-slot-v2.png` (staging serves v2.0) |
 | Traffic routing 70 / 30 | `screenshots/stage4-deployment-slots.png` (Traffic % 70 / 30), `screenshots/stage4-traffic-routing.png` (`staging 30.0`) |
-| CPU > 90 % alert + email | Metric alert `cpu-over-90` (avg CpuPercentage > 90 over 10 min) → action group `cpu-alert-ag` (email): defined in `iac/stage4-all.bicep` and `iac/stage4-action-group.json`. The alert never fired, because CPU never stayed above 90 % for 10 minutes; the evidence is the action group's **Test** email plus the alert rule page: `screenshots/stage4-alert-email.png`* |
+| CPU > 90 % alert + email | Metric alert `cpu-over-90` (avg CpuPercentage > 90 % over 10 min) with action group `cpu-alert-ag` (email receiver) is configured: `screenshots/stage4-action-group-email.png` (action group overview, email notification), `iac/stage4-all.bicep` (metric alert + action group) and `iac/stage4-action-group.json`. No alert email was received: CPU never stayed above 90 % for the full 10-minute window, and the lab mailbox's action-group email verification was still *Pending*. |
 | IaC | `screenshots/stage4-iac-files.png` (files in Cloud Shell); `iac/stage4-all.bicep` (plan, web app, staging slot, metric alert, action group, autoscale; exported from the rebuilt Stage 4 app `myapp-web-15785` after the lab reset), `iac/stage4-autoscale-settings.json` (1/3/1, >70 / <30), `iac/stage4-action-group.json`; reference `iac/reference/stage4-appservice.bicep` |
 
 ### Stage 5: Virtual Machine
 | Rubric item | Evidence |
 |---|---|
 | Ubuntu 22.04 Trusted Launch VM running the app on 8000 | `screenshots/stage5-vm-app-port-8000.png` (`http://52.188.158.50:8000`), `evidence/uvicorn-app.service` |
-| CPU / memory before and after resize (B1s → B2s) | `screenshots/stage5-vm-memory-before-after.png` (Available Memory jumps after the resize); `screenshots/stage5-vm-cpu-before-after.png`* |
+| CPU / memory before and after load / resize (B1s → B2s) | `screenshots/stage5-vm-cpu-before-after.png` (Percentage CPU, last 24 h: ~14 % idle, then up to ~100 % and ~90 % sustained under the CPU-burner load), `screenshots/stage5-vm-memory-before-after.png` (Available Memory jumps after the resize) |
 | ARM exports (initial / before move / after move) | `iac/stage5-vm-initial.json`, `iac/stage5-vm-before-move.json`, `iac/stage5-vm-after-move.json` (identical: the move was blocked, and the initial export was taken after the B2s resize); reference `iac/reference/stage5-vm.json`; move explained in `MOVE-NOTE.md` |
 | Data disk with customer-managed key | `iac/stage5-encryption.json`, `evidence/stage5-disk-encryption.txt`, `screenshots/stage5-disk-cmk-attached.png` (8 GB, `EncryptionAtRestWithCustomerKey`) |
 | Disk mounted | `evidence/stage5-disk-mounted.txt` (`sdc1 8G /datadisk`, test file written) |
@@ -75,10 +75,9 @@ REFLECTION.md  MOVE-NOTE.md
 | Load balancer 80 → 8000 + health probe | `evidence/stage6-image-lb-scale.txt` (`LBRule 80 → 8000`, `/healthz` → `ok`), `screenshots/stage6-lb-app.png` (`http://20.106.151.220`) |
 | Autoscale 1/6/1, CPU > 70 % +1, < 30 % −1 | `screenshots/stage6-autoscale-rules.png`, `screenshots/stage6-autoscale-rules-cli.png` |
 | Scale-out under load | `screenshots/stage6-scaleout-capacity-4.png` (1→4), `screenshots/stage6-metrics-scaleout.png` (Observed Capacity 6), `screenshots/stage6-instances.png` (instances 0-4 Running) |
-| Scale-in after load | `screenshots/stage6-metrics-scalein.png`* |
+| Scale-in after load | `screenshots/stage6-metrics-scalein.png` (Scaling → Run history: *Autoscale scale up* initiated/completed 21:52-22:07, then three *Autoscale scale down initiated* events 22:38, 22:46, 22:53 on Nov 17 2026, portal time UTC+05:30) |
 | ARM export | `iac/stage6-vmss.json` (VMSS + LB + instances), `iac/stage6-autoscale-settings.json` (1/6/1, >70 / <30); reference `iac/reference/stage6-vmss.json` |
 
-\* = screenshot still being added from the portal (see `SUBMISSION-CHECKLIST.md`).
 
 **Stage 1-3 Bicep exports:** they were generated and compiled in Cloud Shell (see the `stageN-*-export-bicep.png` screenshots: `az group export` → `az bicep decompile` → "Bicep compiles OK"), but the files were lost when the lab reset wiped the first environment. The export screenshots and the matching parameterized templates in `iac/reference/` stand in for them.
 
