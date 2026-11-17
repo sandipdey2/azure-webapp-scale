@@ -143,7 +143,7 @@
             "ssh": {
               "publicKeys": [
                 {
-                  "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDDjCcrhtsIbk/vnvK9dg5ikNq5flAdDiEasSYLXNEsB/fN514812gvKPM2f/LLkGsE075RUersZ9dZdju0hTOcHjHTLGMVgbTcWX9bPc4j2ga+YSBBzsq+P0bKAhC+DDJtAYLXMkzdN7zrv0Xa+mgmyOUPEXnheIGINKeSiro948d0xsUALtdUi/tCEomnRXWE5DmKhgkEPf99YbEg8JF/K2Iju35V7VUOFnwSujB23ibdApGLEHm4sFZ4tsD/NsVM3tWxquvlqYoP+AFqhO35jmjiCdDtVnJeLMD55drzSLcySTMSoTxmZdbnJ5gak6h/r9F6QtXsvdr0nVDk5Ja5S9KpEXUrFsZ8AJbZ25H7wFKEQlxH6UYbSTqCUKiLFXJSEpaUVq/L6i/O13LTG/VcJfo4GCvpAi3pOvdODfGFrc7nlpnMe43wONPqTWXxXE5FdQrZaqtNuHPmrii03hMYFc+9wIa+N+reiWYuuQNOn8AT0NHAIOOtFjzdpxNpibpfn+ps6HaltWCgXXS15anv/RGsPOfgx3taqi2FuTIOlmdvV6IBY1fRZ0TzSq7yiBmIh42gxT+TidHrmZGp1Wp37C5amlNYyL83WhHfHWL4VtxY/Wmaj+af3J2P3INvea8rFuWCYIaKAKYHT+824ML/dxytrTfNU/qAhy1+DQcKkw== student_mwbp880g7fy9h9o@SandboxHost-639305224377181142\n",
+                  "keyData": "<ssh-public-key>",
                   "path": "/home/azureuser/.ssh/authorized_keys"
                 }
               ]
