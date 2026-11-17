@@ -1,0 +1,10 @@
+# Cloud Shell output after deploying iac/stage5-encryption.json and attaching the disk
+# (transcribed from the Cloud Shell session, Nov 17 2026)
+$ az deployment group create -g $RG -n stage5-cmk -f stage5-encryption.json -p keyVaultName=$KV location=$LOC desName=$DES diskName=$DISK --query properties.provisioningState -o tsv
+Succeeded
+$ az vm disk attach -g $RG --vm-name $VM --name $DISK -o none && echo "attached"
+attached
+$ az disk show -g $RG -n $DISK --query "{size:diskSizeGB, encryption:encryption.type}" -o table
+Size    Encryption
+------  -------------------------------
+8       EncryptionAtRestWithCustomerKey

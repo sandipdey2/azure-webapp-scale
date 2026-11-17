@@ -1,0 +1,23 @@
+# Cloud Shell outputs for Stage 6 (transcribed from the Cloud Shell session, Nov 17 2026)
+
+$ az sig image-version show -g $RG -r myappgallery -i myapp-img -e 1.0.0 --query provisioningState -o tsv
+Succeeded
+
+# az vmss create added a default rule "LBRule" (80->80); it was repointed to backend 8000 + probe http-probe-8000
+$ az network lb rule list -g $RG --lb-name myapp-vmss-lb --query "[].{name:name,front:frontendPort,back:backendPort}" -o table
+Name    Front    Back
+------  -------  ------
+LBRule  80       8000
+
+$ curl -s -m 10 http://$LB_IP/healthz; echo "  http://$LB_IP"
+ok  http://20.106.151.220
+
+$ az monitor autoscale rule list -g $RG --autoscale-name myapp-vmss-autoscale --query "[].{dir:scaleAction.direction,op:metricTrigger.operator,thr:metricTrigger.threshold}" -o table
+Dir       Op           Thr
+--------  -----------  -----
+Increase  GreaterThan  70.0
+Decrease  LessThan     30.0
+
+# instance watch while the /cpu/add load loop was running (Cloud Shell clock is UTC)
+16:27:51 instances=4
+# Portal later showed myapp-vmss_0 .. myapp-vmss_4 Running and Observed Capacity 6 (see screenshots/stage6-*.png)

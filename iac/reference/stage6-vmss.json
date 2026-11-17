@@ -1,0 +1,191 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "description": "Stage 6 - Trusted Launch VMSS (Uniform) from an Azure Compute Gallery image (specialized by default) + Standard Load Balancer (public IP, backend pool, HTTP probe /healthz:8000, rule 80->8000) + autoscale min 1 / max 6 / default 1, CPU >70% 5m +1 cooldown 5m, CPU <30% 7m -1 cooldown 7m. Deploy: az deployment group create -g $RG -f stage6-vmss.json -p galleryName=$GAL imageDefinitionName=$IMGDEF imageVersion=1.0.0"
+  },
+  "parameters": {
+    "location": { "type": "string", "defaultValue": "eastus" },
+    "vmssName": { "type": "string", "defaultValue": "myapp-vmss" },
+    "vmSize": { "type": "string", "defaultValue": "Standard_B1s" },
+    "galleryName": { "type": "string" },
+    "imageDefinitionName": { "type": "string", "defaultValue": "myapp-img" },
+    "imageVersion": { "type": "string", "defaultValue": "1.0.0" },
+    "specializedImage": { "type": "bool", "defaultValue": true, "metadata": { "description": "true = image definition OS state Specialized (no osProfile; SSH key/user come from the source VM). false = Generalized (osProfile with SSH key below)." } },
+    "adminUsername": { "type": "string", "defaultValue": "azureuser" },
+    "sshPublicKey": { "type": "string", "defaultValue": "PASTE_YOUR_SSH_PUBLIC_KEY" },
+    "minInstances": { "type": "int", "defaultValue": 1 },
+    "maxInstances": { "type": "int", "defaultValue": 6 },
+    "defaultInstances": { "type": "int", "defaultValue": 1 }
+  },
+  "variables": {
+    "vnetName": "[concat(parameters('vmssName'), '-vnet')]",
+    "subnetName": "default",
+    "nsgName": "[concat(parameters('vmssName'), '-nsg')]",
+    "lbName": "[concat(parameters('vmssName'), '-lb')]",
+    "pipName": "[concat(parameters('vmssName'), '-lb-pip')]",
+    "feName": "loadBalancerFrontEnd",
+    "bepName": "[concat(parameters('vmssName'), '-bepool')]",
+    "probeName": "http-probe-8000",
+    "imageVersionId": "[resourceId('Microsoft.Compute/galleries/images/versions', parameters('galleryName'), parameters('imageDefinitionName'), parameters('imageVersion'))]",
+    "osProfile": {
+      "computerNamePrefix": "[take(parameters('vmssName'), 9)]",
+      "adminUsername": "[parameters('adminUsername')]",
+      "linuxConfiguration": {
+        "disablePasswordAuthentication": true,
+        "ssh": { "publicKeys": [ { "path": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]", "keyData": "[parameters('sshPublicKey')]" } ] }
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('nsgName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          { "name": "Allow-App-8000", "properties": { "priority": 1000, "direction": "Inbound", "access": "Allow", "protocol": "Tcp", "sourcePortRange": "*", "destinationPortRange": "8000", "sourceAddressPrefix": "*", "destinationAddressPrefix": "*" } },
+          { "name": "Allow-SSH-22", "properties": { "priority": 1010, "direction": "Inbound", "access": "Allow", "protocol": "Tcp", "sourcePortRange": "*", "destinationPortRange": "22", "sourceAddressPrefix": "*", "destinationAddressPrefix": "*" } }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('vnetName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]" ],
+      "properties": {
+        "addressSpace": { "addressPrefixes": [ "10.1.0.0/16" ] },
+        "subnets": [ { "name": "[variables('subnetName')]", "properties": { "addressPrefix": "10.1.0.0/24", "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]" } } } ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('pipName')]",
+      "location": "[parameters('location')]",
+      "sku": { "name": "Standard" },
+      "properties": { "publicIPAllocationMethod": "Static" }
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('lbName')]",
+      "location": "[parameters('location')]",
+      "sku": { "name": "Standard" },
+      "dependsOn": [ "[resourceId('Microsoft.Network/publicIPAddresses', variables('pipName'))]" ],
+      "properties": {
+        "frontendIPConfigurations": [ { "name": "[variables('feName')]", "properties": { "publicIPAddress": { "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('pipName'))]" } } } ],
+        "backendAddressPools": [ { "name": "[variables('bepName')]" } ],
+        "probes": [ { "name": "[variables('probeName')]", "properties": { "protocol": "Http", "port": 8000, "requestPath": "/healthz", "intervalInSeconds": 5, "numberOfProbes": 2 } } ],
+        "loadBalancingRules": [
+          {
+            "name": "http-80-to-8000",
+            "properties": {
+              "frontendIPConfiguration": { "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', variables('lbName'), variables('feName'))]" },
+              "backendAddressPool": { "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), variables('bepName'))]" },
+              "probe": { "id": "[resourceId('Microsoft.Network/loadBalancers/probes', variables('lbName'), variables('probeName'))]" },
+              "protocol": "Tcp",
+              "frontendPort": 80,
+              "backendPort": 8000,
+              "idleTimeoutInMinutes": 4,
+              "enableFloatingIP": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachineScaleSets",
+      "apiVersion": "2023-09-01",
+      "name": "[parameters('vmssName')]",
+      "location": "[parameters('location')]",
+      "sku": { "name": "[parameters('vmSize')]", "tier": "Standard", "capacity": "[parameters('defaultInstances')]" },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
+        "[resourceId('Microsoft.Network/loadBalancers', variables('lbName'))]"
+      ],
+      "properties": {
+        "orchestrationMode": "Uniform",
+        "overprovision": false,
+        "upgradePolicy": { "mode": "Automatic" },
+        "virtualMachineProfile": {
+          "securityProfile": { "securityType": "TrustedLaunch", "uefiSettings": { "secureBootEnabled": true, "vTpmEnabled": true } },
+          "storageProfile": {
+            "imageReference": { "id": "[variables('imageVersionId')]" },
+            "osDisk": { "createOption": "FromImage", "caching": "ReadWrite", "managedDisk": { "storageAccountType": "Standard_LRS" } }
+          },
+          "osProfile": "[if(parameters('specializedImage'), json('null'), variables('osProfile'))]",
+          "networkProfile": {
+            "networkInterfaceConfigurations": [
+              {
+                "name": "[concat(parameters('vmssName'), '-nic')]",
+                "properties": {
+                  "primary": true,
+                  "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]" },
+                  "ipConfigurations": [
+                    {
+                      "name": "ipconfig1",
+                      "properties": {
+                        "subnet": { "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]" },
+                        "loadBalancerBackendAddressPools": [ { "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), variables('bepName'))]" } ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "diagnosticsProfile": { "bootDiagnostics": { "enabled": true } }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/autoscalesettings",
+      "apiVersion": "2022-10-01",
+      "name": "[concat(parameters('vmssName'), '-autoscale')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [ "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmssName'))]" ],
+      "properties": {
+        "enabled": true,
+        "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmssName'))]",
+        "profiles": [
+          {
+            "name": "cpu-autoscale",
+            "capacity": { "minimum": "[string(parameters('minInstances'))]", "maximum": "[string(parameters('maxInstances'))]", "default": "[string(parameters('defaultInstances'))]" },
+            "rules": [
+              {
+                "metricTrigger": {
+                  "metricName": "Percentage CPU",
+                  "metricNamespace": "microsoft.compute/virtualmachinescalesets",
+                  "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmssName'))]",
+                  "timeGrain": "PT1M", "statistic": "Average", "timeWindow": "PT5M", "timeAggregation": "Average",
+                  "operator": "GreaterThan", "threshold": 70
+                },
+                "scaleAction": { "direction": "Increase", "type": "ChangeCount", "value": "1", "cooldown": "PT5M" }
+              },
+              {
+                "metricTrigger": {
+                  "metricName": "Percentage CPU",
+                  "metricNamespace": "microsoft.compute/virtualmachinescalesets",
+                  "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmssName'))]",
+                  "timeGrain": "PT1M", "statistic": "Average", "timeWindow": "PT7M", "timeAggregation": "Average",
+                  "operator": "LessThan", "threshold": 30
+                },
+                "scaleAction": { "direction": "Decrease", "type": "ChangeCount", "value": "1", "cooldown": "PT7M" }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "lbPublicIp": { "type": "string", "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pipName'))).ipAddress]" },
+    "imageReferenceId": { "type": "string", "value": "[variables('imageVersionId')]" }
+  }
+}
