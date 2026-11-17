@@ -11,7 +11,7 @@
 
 ## Lessons from the lab
 - **Speed vs. control.** ACA reacted in seconds and could reach zero. App Service and the VMSS needed minutes per step plus cooldowns (5 and 7 min), so they need headroom for sudden spikes.
-- **Alerts need more than a rule.** The CPU > 90 % alert and email action group were configured, but no email arrived: CPU never stayed above 90 % for the full 10-minute window, and the action-group email verification was still pending in the lab. A test notification (or a lower threshold during testing) is the way to prove the path end to end.
+- **Alerts need more than a rule.** The CPU > 90 % alert and email action group were configured, but the real alert never fired: CPU never stayed above 90 % for the full 10-minute window. The email receiver first had to be verified; after that, a Test action group notification arrived, which proves the notification path end to end without waiting for a real breach.
 - **Limits fail differently.** ACI and ACA kill the container at the memory limit (exit code 137) and restart it. The VM did not crash; it just ran short on memory until I resized it from B1s to B2s. Scaling out on CPU does not fix a memory leak, because each new instance leaks too.
 - **Operations grow as you move to IaaS.** The VM path needed a systemd service, NSG rules for 22/8000, a Key Vault + disk encryption set for the customer-managed key, and image capture to a gallery before the scale set could exist. ACA needed one command.
 - **Infrastructure as code helped in practice.** When the CLI path for Key Vault kept failing on Microsoft Graph token timeouts, one ARM template created the vault, key, encryption set, access policy and encrypted disk in a single deployment.
