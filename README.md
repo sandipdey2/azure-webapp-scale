@@ -53,8 +53,8 @@ REFLECTION.md  MOVE-NOTE.md
 ### Stage 4: App Service
 | Rubric item | Evidence |
 |---|---|
-| Standard S1 plan, scale-out settings | [`screenshots/stage4-plan-s1-scale-out.png`](screenshots/stage4-plan-s1-scale-out.png) |
-| Autoscale 1/3/1 on CPU, scaled to 3 | [`screenshots/stage4-cpu-scaleout-3.png`](screenshots/stage4-cpu-scaleout-3.png) (instance count 1 → 2 → 3 during the load test) |
+| Standard S1 plan, scale-out settings | [`screenshots/stage4-plan-s1-scale-out.png`](screenshots/stage4-plan-s1-scale-out.png) (Standard S1). Region West US 2: see deviation 3 |
+| Autoscale 1/3/1 on CPU, scaled to 3 | Rules in [`iac/stage4-autoscale-settings.json`](iac/stage4-autoscale-settings.json) (> 70 % for PT5M +1, cooldown PT5M; < 30 % for PT7M −1, cooldown PT7M); [`screenshots/stage4-cpu-scaleout-3.png`](screenshots/stage4-cpu-scaleout-3.png) (instance count 1 → 2 → 3 during the load test; see deviation 6) |
 | Deployment slot (staging) | [`screenshots/stage4-deployment-slots.png`](screenshots/stage4-deployment-slots.png), [`screenshots/stage4-staging-slot-v2.png`](screenshots/stage4-staging-slot-v2.png) (staging serves v2.0) |
 | Traffic routing 70 / 30 | [`screenshots/stage4-deployment-slots.png`](screenshots/stage4-deployment-slots.png) (Traffic % 70 / 30), [`screenshots/stage4-traffic-routing.png`](screenshots/stage4-traffic-routing.png) (`staging 30.0`) |
 | CPU > 90 % alert + email | Metric alert `cpu-over-90` (avg CpuPercentage > 90 % over 10 min, evaluated every 1 min) with action group `cpu-alert-ag` (email receiver): [`screenshots/stage4-action-group-email.png`](screenshots/stage4-action-group-email.png), [`iac/stage4-all.bicep`](iac/stage4-all.bicep), [`iac/stage4-action-group.json`](iac/stage4-action-group.json). After the email receiver was verified, a **Test action group** notification was delivered on Nov 17 2026 (18:03 UTC): [`screenshots/stage4-alert-test-email.png`](screenshots/stage4-alert-test-email.png) ("Your Azure Monitor alert was triggered", from azure-noreply@microsoft.com; the IDs in it are Azure's sample values). This proves the alert's action group delivers email. The real threshold never fired because CPU never stayed above 90 % for the full 10 minutes. |
@@ -74,9 +74,9 @@ REFLECTION.md  MOVE-NOTE.md
 |---|---|
 | Gallery image from the VM | [`evidence/stage6-image-lb-scale.txt`](evidence/stage6-image-lb-scale.txt) (image version `Succeeded`) |
 | Load balancer 80 → 8000 + health probe | [`evidence/stage6-image-lb-scale.txt`](evidence/stage6-image-lb-scale.txt) (`LBRule 80 → 8000`, `/healthz` → `ok`), [`screenshots/stage6-lb-app.png`](screenshots/stage6-lb-app.png) (`http://20.106.151.220`) |
-| Autoscale 1/6/1, CPU > 70 % +1, < 30 % −1 | [`screenshots/stage6-autoscale-rules.png`](screenshots/stage6-autoscale-rules.png), [`screenshots/stage6-autoscale-rules-cli.png`](screenshots/stage6-autoscale-rules-cli.png) |
-| Scale-out under load | [`screenshots/stage6-scaleout-capacity-4.png`](screenshots/stage6-scaleout-capacity-4.png) (1→4), [`screenshots/stage6-metrics-scaleout.png`](screenshots/stage6-metrics-scaleout.png) (Observed Capacity 6), [`screenshots/stage6-instances.png`](screenshots/stage6-instances.png) (instances 0-4 Running) |
-| Scale-in after load | [`screenshots/stage6-metrics-scalein.png`](screenshots/stage6-metrics-scalein.png) (Scaling → Run history: *Autoscale scale up* initiated/completed 21:52-22:07, then three *Autoscale scale down initiated* events 22:38, 22:46, 22:53 on Nov 17 2026, portal time UTC+05:30) |
+| Autoscale 1/6/1, CPU > 70 % +1, < 30 % −1 | [`screenshots/stage6-autoscale-rules.png`](screenshots/stage6-autoscale-rules.png), [`screenshots/stage6-autoscale-rules-cli.png`](screenshots/stage6-autoscale-rules-cli.png), [`iac/stage6-autoscale-settings.json`](iac/stage6-autoscale-settings.json) (> 70 % for PT5M +1, cooldown PT5M; < 30 % for PT7M −1, cooldown PT7M) |
+| Scale-out under load (Azure Monitor Metrics) | [`screenshots/stage6-metrics-cpu-scaleout-scalein.png`](screenshots/stage6-metrics-cpu-scaleout-scalein.png) (Percentage CPU, Avg, last 24 h: rises to ~88 %, above the 70 % scale-out threshold), [`screenshots/stage6-metrics-scaleout.png`](screenshots/stage6-metrics-scaleout.png) (Observed Capacity up to 6), [`screenshots/stage6-scaleout-capacity-4.png`](screenshots/stage6-scaleout-capacity-4.png) (1→4), [`screenshots/stage6-instances.png`](screenshots/stage6-instances.png) (instances 0-4 Running) |
+| Scale-in after load (Azure Monitor Metrics) | [`screenshots/stage6-metrics-cpu-scaleout-scalein.png`](screenshots/stage6-metrics-cpu-scaleout-scalein.png) (CPU then drops to ~9 %, below the 30 % scale-in threshold, after the load stopped) and [`screenshots/stage6-metrics-scalein.png`](screenshots/stage6-metrics-scalein.png) (Scaling → Run history: *Autoscale scale up* initiated/completed 21:52-22:07, then three *Autoscale scale down initiated* events 22:38, 22:46, 22:53 on Nov 17 2026, portal time UTC+05:30) |
 | ARM export | [`iac/stage6-vmss.json`](iac/stage6-vmss.json) (VMSS + LB + instances), [`iac/stage6-autoscale-settings.json`](iac/stage6-autoscale-settings.json) (1/6/1, >70 / <30); reference [`iac/reference/stage6-vmss.json`](iac/reference/stage6-vmss.json) |
 
 
@@ -146,7 +146,9 @@ Summary of deviations from the brief, so the reviewer does not have to search fo
 3. **Stage 4 region:** West US 2 instead of East US (S1 quota is 0 in East US).
 4. **Stage 4 alert email:** the real `cpu-over-90` alert never fired (CPU never stayed above 90 % for 10 min); email delivery through its action group is proven with a Test action group notification ([`screenshots/stage4-alert-test-email.png`](screenshots/stage4-alert-test-email.png)).
 5. **Stage 5 resource group move:** blocked by permissions; the before/after exports are identical ([`MOVE-NOTE.md`](MOVE-NOTE.md)).
-6. **Stage 6 scale-in:** shown in the autoscale *Run history* (scale-down events) rather than a Metrics chart.
+6. **Stage 4 scale-out evidence:** the 1 → 2 → 3 scale-out is shown by a Cloud Shell instance-count log during the load test ([`screenshots/stage4-cpu-scaleout-3.png`](screenshots/stage4-cpu-scaleout-3.png)) rather than a Metrics chart; that App Service plan was removed by the lab reset.
+7. **Stage 3 CPU chart:** captured on the redeployed app (idle, ~2 millicores); the original load run's scaling is shown by Replica Count and replica lists.
+8. **Stage 5 CPU chart:** shows idle vs. load over 24 h; the B1s → B2s resize is evidenced by the memory chart and the exported `vmSize: Standard_B2s`.
 
 | Limitation | Workaround |
 |---|---|
