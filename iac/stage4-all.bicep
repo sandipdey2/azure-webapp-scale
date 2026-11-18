@@ -637,13 +637,10 @@ resource sites_myapp_web_15785_name_staging_sites_myapp_web_15785_name_staging_a
   ]
 }
 
-// Diagnostic settings (added to address reviewer feedback)
 resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   name: 'appServiceDiag'
   scope: sites_myapp_web_15785_name_resource
   properties: {
-    // Uncomment and set if you have a Log Analytics workspace:
-    // workspaceId: '/subscriptions/<guid>/resourceGroups/Regroup_7fpasjkvcc/providers/Microsoft.OperationalInsights/workspaces/<your-law-name>'
     logs: [
       { category: 'AppServiceHTTPLogs', enabled: true }
       { category: 'AppServiceConsoleLogs', enabled: true }
