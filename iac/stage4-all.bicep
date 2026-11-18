@@ -65,7 +65,7 @@ resource actionGroups_cpu_alert_ag_name_resource 'microsoft.insights/actionGroup
     azureFunctionReceivers: []
     emailReceivers: [
       {
-        emailAddress: '<email>'
+        emailAddress: 'student@example.com'   // ← change to your real email if you want the test mail
         name: 'me'
         useCommonAlertSchema: false
       }
@@ -635,21 +635,4 @@ resource sites_myapp_web_15785_name_staging_sites_myapp_web_15785_name_staging_a
   dependsOn: [
     sites_myapp_web_15785_name_resource
   ]
-}
-
-resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: 'appServiceDiag'
-  scope: sites_myapp_web_15785_name_resource
-  properties: {
-    logs: [
-      { category: 'AppServiceHTTPLogs', enabled: true }
-      { category: 'AppServiceConsoleLogs', enabled: true }
-      { category: 'AppServiceAppLogs', enabled: true }
-      { category: 'AppServicePlatformLogs', enabled: true }
-      { category: 'AppServiceAuditLogs', enabled: true }
-    ]
-    metrics: [
-      { category: 'AllMetrics', enabled: true }
-    ]
-  }
 }
