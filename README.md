@@ -1,41 +1,46 @@
-# Azure Web App Scaling Journey
+# Deploy and Manage Azure Compute Resources
 
-This project guides a mock web application through its scaling journey on Azure — from a lightweight container deployment to an enterprise-ready auto-scaling solution.
+Udacity project: one containerized FastAPI app ("Leak-on-Click + CPU Burn") deployed on six Azure compute services.
+
+## Known deviations (lab limitations)
+
+- **Stage 4**: App Service plan created in West US 2 (East US S1 quota was 0). Logging categories (`detailedErrorLoggingEnabled`, `httpLoggingEnabled`, `requestTracingEnabled`) are enabled on production and staging. Diagnostic settings resource omitted because the lab role cannot create a Log Analytics workspace (required as a data sink). Scale-out evidence is the Metrics chart showing CPU Percentage + Observed Capacity reaching 3.
+- **Stage 5**: `stage5-vm-initial.json` contains `Standard_B1s`. `stage5-vm-after-resize.json` contains `Standard_B2s`. Resource group move was blocked by lab permissions (see MOVE-NOTE.md).
+- **Stage 6**: VMSS and autoscale (min 1 / max 6, CPU 70/30) were created. Live CPU load could not be generated because Run Command and SSH were blocked on Flexible orchestration mode. Evidence is the ARM export and Scaling configuration.
+- **Centralized monitoring**: Log Analytics workspace creation was denied. Logging categories were still enabled on App Service.
 
 ## Stages
 
-| Stage | Services | Key Deliverables |
-|-------|----------|------------------|
-| 1 | ACR | `stage1-acr.bicep`, repository list, screenshot |
-| 2 | ACI | `stage2-aci.bicep`, CPU/memory before/after, OOMKilled evidence |
-| 3 | ACA | `stage3-aca.bicep`, CPU/memory/replicas, OOM evidence |
-| 4 | App Service (S1) + Slot + Autoscale | `stage4-all.bicep`, metrics screenshot (CPU + instances = 3), slots, traffic routing |
-| 5 | VM (B1s → B2s) | `stage5-vm-initial.json` (B1s), `stage5-vm-after-resize.json` (B2s), MOVE-NOTE.md |
-| 6 | VMSS + Autoscale | `stage6-vmss.json`, autoscale rules, scale-out/in metrics |
+| Stage | Service | Key result |
+|-------|---------|------------|
+| 1 | ACR | Image pushed |
+| 2 | ACI | OOMKilled (exit 137) |
+| 3 | ACA | Scaled 0→4, OOM |
+| 4 | App Service S1 | Autoscale 1→3, staging slot 30 % |
+| 5 | VM | B1s → B2s, CMK disk |
+| 6 | VMSS | Autoscale 1/6/1 |
 
-## Known deviations
+See [REFLECTION.md](REFLECTION.md) and [MOVE-NOTE.md]# Deploy and Manage Azure Compute Resources
 
-- **Stage 1–3**: Clean parameterized reference templates used (original exports lost in lab reset).
-- **Stage 4**: App Service plan created in West US 2 (East US S1 quota was 0). Logging categories enabled on production and staging. Diagnostic settings resource omitted because the lab cannot create a Log Analytics workspace (required as a data sink). Metrics screenshot shows CPU Percentage + Observed Capacity reaching 3.
-- **Stage 5**: Initial export (`stage5-vm-initial.json`) is Standard_B1s; after-resize export is Standard_B2s. Resource group move blocked by lab permissions (see MOVE-NOTE.md).
-- **Stage 6**: Completed with the provided resource group. Autoscale rules and metrics screenshots captured.
-- **Centralized monitoring**: Log Analytics workspace could not be created (permission denied). Logging categories were still enabled on App Service.
+Udacity project: one containerized FastAPI app ("Leak-on-Click + CPU Burn") deployed on six Azure compute services.
 
-## Key files
+## Known deviations (lab limitations)
 
-- `MOVE-NOTE.md` — explains the blocked resource group move
-- `REFLECTION.md` — service comparison and lab constraints
-- `stage4-all.bicep` — App Service + slot + autoscale + alert (logging enabled)
-- `stage5-vm-initial.json` — Standard_B1s
-- `stage5-vm-after-resize.json` — Standard_B2s
+- **Stage 4**: App Service plan created in West US 2 (East US S1 quota was 0). Logging categories (`detailedErrorLoggingEnabled`, `httpLoggingEnabled`, `requestTracingEnabled`) are enabled on production and staging. Diagnostic settings resource omitted because the lab role cannot create a Log Analytics workspace (required as a data sink). Scale-out evidence is the Metrics chart showing CPU Percentage + Observed Capacity reaching 3.
+- **Stage 5**: `stage5-vm-initial.json` contains `Standard_B1s`. `stage5-vm-after-resize.json` contains `Standard_B2s`. Resource group move was blocked by lab permissions (see MOVE-NOTE.md).
+- **Stage 6**: VMSS and autoscale (min 1 / max 6, CPU 70/30) were created. Live CPU load could not be generated because Run Command and SSH were blocked on Flexible orchestration mode. Evidence is the ARM export and Scaling configuration.
+- **Centralized monitoring**: Log Analytics workspace creation was denied. Logging categories were still enabled on App Service.
 
-## Lab notes
+## Stages
 
-All work was performed in the Vocareum-provided resource group (`Regroup_*`). The lab role cannot create additional resource groups or Log Analytics workspaces. Screenshots and exports were captured immediately after each stage because lab sessions reset and delete resources.
+| Stage | Service | Key result |
+|-------|---------|------------|
+| 1 | ACR | Image pushed |
+| 2 | ACI | OOMKilled (exit 137) |
+| 3 | ACA | Scaled 0→4, OOM |
+| 4 | App Service S1 | Autoscale 1→3, staging slot 30 % |
+| 5 | VM | B1s → B2s, CMK disk |
+| 6 | VMSS | Autoscale 1/6/1 |
 
-### Stage 6
-VMSS `myapp-vmss` was created in `Regroup_5vlvpwituq` with autoscale  
-(min 1 / max 6 / default 1; scale-out CPU > 70 %, scale-in CPU < 30 %).  
-Lab permissions blocked Run Command and SSH (Flexible orchestration mode),  
-so live CPU load could not be applied.  
-Evidence: ARM export (`stage6-vmss.json`) and Scaling configuration.
+See [REFLECTION.md](REFLECTION.md) and [MOVE-NOTE.md].
+.
