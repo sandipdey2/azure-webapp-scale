@@ -1,19 +1,32 @@
-# Stage 5: resource group move (blocked by the lab)
+# Stage 5: Resource group move
 
-**Requirement:** move `myapp-vm` (and its NIC, disk, IP, NSG) to a new resource group and compare the ARM export before and after the move.
+**Attempted move:** `Regroup_1acmbdgntz` → new resource group  
+**Date:** 2026-11-17  
+**Result:** Blocked
 
-**What happened:** the lab role cannot create resource groups. `az group create` failed with
-`AuthorizationFailed ... Microsoft.Resources/subscriptions/resourcegroups/write`, so there was no target group to move into, and `az resource move` could not run.
+## Why the before/after exports are identical
+The lab role does not have permission to create a second resource group  
+(`Microsoft.Resources/subscriptions/resourceGroups/write` denied).  
+Therefore the VM, OS disk, NIC, NSG, public IP and VNet could not be moved.
 
-**Result:** `stage5-vm-before-move.json` and `stage5-vm-after-move.json` were both exported from the same group (`Regroup_7fpasjkvcc`) and are identical.
+- `stage5-vm-before-move.json` and `stage5-vm-after-move.json` are identical because the move never occurred.
+- Resource IDs, location, size, and configuration did not change.
 
-**What a real move changes (expected diff):**
-- Every resource ID changes from `/resourceGroups/<old-rg>/...` to `/resourceGroups/<new-rg>/...`, and so do the IDs that reference other resources (NIC → VM, NSG/subnet → NIC, public IP → NIC, OS disk → VM).
-- The resource names, location, SKU, VM size, Trusted Launch settings and disk encryption stay the same. A move does not redeploy or restart the VM.
-- Tags and RBAC assignments scoped to the old group do not follow the resources.
+## What a successful move would have changed
+- Every resource ID would have updated in the `/resourceGroups/<old>/` segment to the new group name.
+- Cross-resource references (VM → NIC, NIC → subnet/publicIP/NSG, subnet → NSG) would have been rewritten.
+- The exported template would have needed to be deployed with `-g <new-rg>`.
+- Location, VM size, NSG rules (22, 8000), disk contents, and the static public IP address would have stayed the same.
 
-**Command that would have been used:**
-```bash
-az group create -n my_rg_moved -l eastus
-az resource move --destination-group my_rg_moved --ids $(az resource list -g $RG --query "[?contains(name,'myapp-vm')].id" -o tsv)
-```
+## Lab limitation
+Vocareum lab accounts cannot create additional resource groups.  
+All other Stage 5 requirements were completed in the provided resource group:
+- Initial export (`stage5-vm-initial.json`) shows `Standard_B1s`
+- After-resize export shows `Standard_B2s`
+- Metrics screenshots document CPU and memory before/after resize
+- Encryption template and disk mount evidence were captured
+
+## Takeaway
+A resource group is only a management and RBAC boundary, not a physical location.  
+Moving resources updates their identity (ID path) and any hard-coded references, but does not change where they run.  
+In environments that block resource-group creation, the before/after comparison must be documented rather than executed.
