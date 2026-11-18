@@ -1,18 +1,23 @@
-# Reflection: choosing an Azure compute service
+# Choosing a compute service: what this project showed
 
-| Service | Cost when idle / always-on | What you manage | How it scaled in this project | Choose it when |
+| Service | Cost when idle / always-on | What you manage | How it scales | Choose it when |
 |---|---|---|---|---|
-| **ACR** | Fixed daily SKU price (Standard) plus storage | Images, tags, access | n/a (registry) | Always: one private source of images for every service below |
-| **ACI** | Per-second vCPU + GiB while the group exists. Cheap for short jobs, expensive 24/7 | Almost nothing; no OS, but no autoscale or load balancer either | **Manual / none.** One fixed 1 vCPU / 1.5 GB group. The leak drove memory to ~1 GB and the container was killed (ExitCode 137) and restarted (restart count 2) | Quick proofs of concept, batch or scheduled jobs, CI agents |
-| **ACA** | Consumption billing, **scales to 0** | Container + scale rules; platform handles OS, ingress, TLS, revisions | **Automatic.** min 0 / max 4 with an HTTP rule: 0 replicas when idle, 0→1 on the first request, 4 under load. The leak caused exit code 137 terminations (5 restarts) | Microservices, APIs and event-driven apps with bursty traffic |
-| **App Service** | Plan billed 24/7 per instance (S1 needed for slots + autoscale) | App settings, slots, plan size; platform patches OS/runtime | **Automatic, rule-based.** 1/3/1, CPU >70% out, <30% in; went 1→2→3 instances under load. Staging slot (v2.0) got 30% of traffic | Classic web apps/APIs that need slots, A/B routing and simple CI/CD |
-| **VM** | Billed while allocated, plus disks and IP | **Everything:** OS, runtime, systemd unit, NSG, disks, CMK encryption | **Manual, vertical.** B1s → B2s resize (reboot) to get memory headroom | Full OS control, custom agents, special disk/compliance needs (CMK) |
-| **VMSS** | Per running instance; min 1 keeps a floor cost | Same as VM, through a gallery image + load balancer + health probe | **Automatic, horizontal.** 1/6/1, CPU >70% +1, <30% −1; scaled out to 6 under load, then scaled in step by step (three scale-down events ~7-8 min apart) after the load stopped | Stateless IaaS fleets that need OS control **and** elasticity |
+| **ACR** | Fixed daily SKU price (Standard), plus storage | Images, tags, access | n/a (registry) | Always: one private source of images for every service below |
+| **ACI** | Per-second vCPU + GiB while the group exists. Cheap for short jobs, pricey 24/7 | Almost nothing. No OS, but no autoscale or LB either | **Manual**: one fixed-size group. You redeploy to resize, and OOM simply restarts it | Quick PoC, batch or cron jobs, a sidecar task, CI agents |
+| **ACA** | Consumption: per-second, **can scale to 0**, free monthly grant. Cheapest for spiky or idle apps | Container + scale rules. Platform handles OS, ingress, TLS, revisions | **Automatic**: KEDA rules (CPU, HTTP, queue), 0→N replicas in seconds | Microservices, APIs and event-driven workloads with bursty traffic |
+| **App Service** | Plan billed 24/7 per instance (S1+ for slots/autoscale), even when idle | App settings, slots, plan size. Platform patches OS and runtime | **Automatic** rule-based (Azure Monitor autoscale), 1→N instances in minutes. Slots give A/B and zero-downtime swaps | Classic web apps or APIs that need slots, custom domains and easy CI/CD |
+| **VM** | Billed while allocated (deallocate to stop compute cost), plus disks and IP | **Everything**: OS patching, runtime, systemd, NSG, disks, CMK encryption, backups | **Manual**: resize = reboot (vertical only) | Full control: custom OS/agents, legacy software, special disk or compliance needs (CMK) |
+| **VMSS** | Per running instance. Min 1 keeps a floor cost | Same as VM, but via a golden image (gallery) + LB + health probe | **Automatic** horizontal scaling (here 1–6 on CPU 70/30), with minutes of lag per instance | Stateless IaaS fleets that need OS control **and** elasticity |
 
-## Lessons from the lab
-- **Speed vs. control.** ACA reacted in seconds and could reach zero. App Service and the VMSS needed minutes per step plus cooldowns (5 and 7 min), so they need headroom for sudden spikes.
-- **Alerts need more than a rule.** The CPU > 90 % alert and email action group were configured, but the real alert never fired: CPU never stayed above 90 % for the full 10-minute window. The email receiver first had to be verified; after that, a Test action group notification arrived, which proves the notification path end to end without waiting for a real breach.
-- **Limits fail differently.** ACI and ACA kill the container at the memory limit (exit code 137) and restart it. The VM did not crash; it just ran short on memory until I resized it from B1s to B2s. Scaling out on CPU does not fix a memory leak, because each new instance leaks too.
-- **Operations grow as you move to IaaS.** The VM path needed a systemd service, NSG rules for 22/8000, a Key Vault + disk encryption set for the customer-managed key, and image capture to a gallery before the scale set could exist. ACA needed one command.
-- **Infrastructure as code helped in practice.** When the CLI path for Key Vault kept failing on Microsoft Graph token timeouts, one ARM template created the vault, key, encryption set, access policy and encrypted disk in a single deployment.
-- **What I would pick:** ACA for a new containerized web app; App Service when the team wants slots and a familiar PaaS; VMSS only when OS-level control is a hard requirement; ACI for one-off jobs.
+**Lessons from the lab**
+- **Granularity versus control.** ACA scaled in seconds and could reach zero. App Service and VMSS took minutes per step and add cooldowns (5 and 7 min), so they need headroom for sudden spikes.
+- **Resource limits fail differently.** ACI and ACA kill the container on the memory limit (OOMKilled / exit 137) and restart it. The VM just ran out of headroom until I resized it. Autoscale on CPU doesn't fix a memory leak, because every new instance leaks too.
+- **Operational load grows to the right of the table.** The VM path needed cloud-init, a systemd unit, NSG rules, Key Vault + DES for CMK, and image capture. ACA needed one command.
+- **What I'd pick:** ACA for a new containerized web app; App Service when the team wants slots and a familiar PaaS; VMSS only when OS-level control is a hard requirement; ACI for one-off jobs.
+
+## Lab constraints that affected implementation
+
+- Resource group creation is blocked → Stage 5 move could not be executed; documented in MOVE-NOTE.md instead.
+- Log Analytics workspace creation is blocked (`Microsoft.OperationalInsights/workspaces/write` denied). Diagnostic settings therefore could not be created with a workspace sink. Logging categories were still enabled on the App Service (`detailedErrorLoggingEnabled`, `httpLoggingEnabled`, `requestTracingEnabled` = true).
+- App Service S1 quota was 0 in East US → plan was created in West US 2.
+- Lab sessions reset and delete resources → screenshots and exports were captured as soon as each stage completed. The initial VM export (`stage5-vm-initial.json`) was recreated as Standard_B1s after a reset.
