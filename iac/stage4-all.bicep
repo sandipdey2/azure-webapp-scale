@@ -344,7 +344,7 @@ resource sites_myapp_web_15785_name_web 'Microsoft.Web/sites/config@2024-11-01' 
       'index.php'
       'hostingstart.html'
     ]
-    detailedErrorLoggingEnabled: false
+    detailedErrorLoggingEnabled: true
     elasticWebAppScaleLimit: 0
     experiments: {
       rampUpRules: [
@@ -359,7 +359,7 @@ resource sites_myapp_web_15785_name_web 'Microsoft.Web/sites/config@2024-11-01' 
     functionsRuntimeScaleMonitoringEnabled: false
     http20Enabled: false
     http20ProxyFlag: 0
-    httpLoggingEnabled: false
+    httpLoggingEnabled: true
     ipSecurityRestrictions: [
       {
         action: 'Allow'
@@ -384,7 +384,7 @@ resource sites_myapp_web_15785_name_web 'Microsoft.Web/sites/config@2024-11-01' 
     publishingUsername: 'REDACTED'
     remoteDebuggingEnabled: false
     remoteDebuggingVersion: 'VS2022'
-    requestTracingEnabled: false
+    requestTracingEnabled: true
     scmIpSecurityRestrictions: [
       {
         action: 'Allow'
@@ -560,7 +560,7 @@ resource sites_myapp_web_15785_name_staging_web 'Microsoft.Web/sites/slots/confi
       'index.php'
       'hostingstart.html'
     ]
-    detailedErrorLoggingEnabled: false
+    detailedErrorLoggingEnabled: true
     elasticWebAppScaleLimit: 0
     experiments: {
       rampUpRules: []
@@ -569,7 +569,7 @@ resource sites_myapp_web_15785_name_staging_web 'Microsoft.Web/sites/slots/confi
     functionsRuntimeScaleMonitoringEnabled: false
     http20Enabled: false
     http20ProxyFlag: 0
-    httpLoggingEnabled: false
+    httpLoggingEnabled: true
     ipSecurityRestrictions: [
       {
         action: 'Allow'
@@ -594,7 +594,7 @@ resource sites_myapp_web_15785_name_staging_web 'Microsoft.Web/sites/slots/confi
     publishingUsername: 'REDACTED'
     remoteDebuggingEnabled: false
     remoteDebuggingVersion: 'VS2022'
-    requestTracingEnabled: false
+    requestTracingEnabled: true
     scmIpSecurityRestrictions: [
       {
         action: 'Allow'
@@ -635,4 +635,24 @@ resource sites_myapp_web_15785_name_staging_sites_myapp_web_15785_name_staging_a
   dependsOn: [
     sites_myapp_web_15785_name_resource
   ]
+}
+
+// Diagnostic settings (added to address reviewer feedback)
+resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'appServiceDiag'
+  scope: sites_myapp_web_15785_name_resource
+  properties: {
+    // Uncomment and set if you have a Log Analytics workspace:
+    // workspaceId: '/subscriptions/<guid>/resourceGroups/Regroup_7fpasjkvcc/providers/Microsoft.OperationalInsights/workspaces/<your-law-name>'
+    logs: [
+      { category: 'AppServiceHTTPLogs', enabled: true }
+      { category: 'AppServiceConsoleLogs', enabled: true }
+      { category: 'AppServiceAppLogs', enabled: true }
+      { category: 'AppServicePlatformLogs', enabled: true }
+      { category: 'AppServiceAuditLogs', enabled: true }
+    ]
+    metrics: [
+      { category: 'AllMetrics', enabled: true }
+    ]
+  }
 }
