@@ -32,3 +32,10 @@ This project guides a mock web application through its scaling journey on Azure 
 ## Lab notes
 
 All work was performed in the Vocareum-provided resource group (`Regroup_*`). The lab role cannot create additional resource groups or Log Analytics workspaces. Screenshots and exports were captured immediately after each stage because lab sessions reset and delete resources.
+
+### Stage 6
+VMSS `myapp-vmss` was created in `Regroup_5vlvpwituq` with autoscale  
+(min 1 / max 6 / default 1; scale-out CPU > 70 %, scale-in CPU < 30 %).  
+Lab permissions blocked Run Command and SSH (Flexible orchestration mode),  
+so live CPU load could not be applied.  
+Evidence: ARM export (`stage6-vmss.json`) and Scaling configuration.
