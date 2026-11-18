@@ -1,19 +1,24 @@
 # Infrastructure as code
 
 | File | Stage | Origin |
-|---|---|---|
-| `stage1-acr.bicep` | 1 | `az group export` → `az bicep decompile` of registry `cgacr13672` (Standard, admin user enabled, East US; includes the built-in scope maps). This registry was re-created after the lab reset |
-| `stage2-aci.bicep` | 2 | Export of `myapp-aci` redeployed into `Regroup_7fpasjkvcc` (containerGroups, image `cgacr13672.azurecr.io/myapp:1.0`, 1 vCPU / 1.5 GB, port 80, restart policy Always, DNS label `myapp-aci-23935`). Registry password is not included |
-| `stage3-aca.bicep` | 3 | Export of environment `myapp-env` + app `myapp-aca` redeployed into `Regroup_7fpasjkvcc` (0.5 vCPU / 1 Gi, ingress 80, min 0 / max 4, HTTP rule `concurrentRequests 10`). Secret values are not included; the workspace ID is `<guid>` |
-| `stage4-all.bicep` | 4 | `az group export` → `az bicep decompile` of the rebuilt Stage 4 environment (`Regroup_7fpasjkvcc`): ACR `cgacr13672`, plan `myapp-plan` (S1, West US 2), web app `myapp-web-15785` + `staging` slot, metric alert `cpu-over-90`, action group `cpu-alert-ag`, autoscale `myapp-plan-autoscale` |
-| `stage4-autoscale-settings.json` | 4 | `az monitor autoscale show` (target: App Service plan `myapp-plan`; min/max/default 1/3/1; CPU > 70 → +1, < 30 → −1) |
-| `stage4-action-group.json` | 4 | `az monitor action-group show -n cpu-alert-ag` (email receiver; address replaced by `<email>`) |
-| `stage5-vm-initial.json`, `stage5-vm-before-move.json`, `stage5-vm-after-move.json` | 5 | `az group export` of `myapp-vm` and its network resources. The three files are identical: the resource group move was blocked by the lab (see `../MOVE-NOTE.md`), and the initial export was taken after the B1s → B2s resize. SSH public key replaced by `<ssh-public-key>` |
-| `stage5-encryption.json` | 5 | The ARM template I deployed (`az deployment group create -n stage5-cmk`): Key Vault, RSA key, disk encryption set, access policy and the 8 GB CMK-encrypted data disk |
-| `stage6-vmss.json` | 6 | `az group export` of `myapp-vmss` and `myapp-vmss-lb` (VMSS from gallery image `myapp-img` 1.0.0, LB rule 80 → 8000, probe, instances) |
-| `stage6-autoscale-settings.json` | 6 | `az monitor autoscale show` (target: `myapp-vmss`; 1/6/1; CPU > 70 → +1, < 30 → −1) |
-| `reference/*.bicep`, `reference/*.json` | 1-6 | Hand-written, parameterized templates that redeploy each stage (`az deployment group create -g <rg> -f <file> -p ...`). Used as fallbacks after the lab reset. No subscription IDs or secrets; passwords are `@secure()` parameters |
+|------|-------|--------|
+| stage1-acr.bicep | 1 | Export of ACR (Standard) |
+| stage2-aci.bicep | 2 | Export of ACI (1 vCPU / 1.5 GB, port 80) |
+| stage3-aca.bicep | 3 | Export of Container App (min 0 / max 4) |
+| stage4-all.bicep | 4 | Export of App Service plan, web app, staging slot, autoscale, alert |
+| stage4-autoscale-settings.json | 4 | Autoscale 1/3/1, CPU > 70 % / < 30 % |
+| stage4-action-group.json | 4 | Action group for CPU > 90 % alert |
+| stage5-vm-initial.json | 5 | Initial export — `"vmSize": "Standard_B1s"` |
+| stage5-vm-after-resize.json | 5 | After resize — `"vmSize": "Standard_B2s"` |
+| stage5-vm-before-move.json | 5 | Before move (identical to after-move; move blocked) |
+| stage5-vm-after-move.json | 5 | After move (identical; see ../MOVE-NOTE.md) |
+| stage5-encryption.json | 5 | CMK encryption template (Key Vault + DES + disk) |
+| stage6-vmss.json | 6 | Export of VMSS |
+| stage6-autoscale-settings.json | 6 | Autoscale 1/6/1, CPU > 70 % / < 30 % |
+| reference/* | 1–6 | Hand-written parameterized fallbacks |
 
-**Stage 1-3 note:** the original Stage 1-3 exports were lost when the lab reset wiped `Regroup_2xspzsnqpi` (their export screenshots remain in `../screenshots/`). The files above were re-exported on Nov 17 2026 in `Regroup_7fpasjkvcc`.
-
-All exports had the subscription ID, other GUIDs and email addresses replaced with `<subscription-id>`, `<guid>` and `<email>` before being committed.
+## Notes
+- Stage 5 initial export is Standard_B1s. After-resize export is Standard_B2s.
+- Resource group move was blocked by lab permissions (see ../MOVE-NOTE.md).
+- Stage 4 diagnostic settings omitted (no Log Analytics workspace permission). Logging categories are enabled.
+- Subscription IDs, GUIDs, and emails were replaced with placeholders before commit.
